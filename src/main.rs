@@ -40,7 +40,6 @@ fn load_words() -> String {
 }
 
 fn main() -> std::io::Result<()> {
-
     match TcpStream::connect("proj1.3700.network:27993") {
         Ok(mut stream) => {
             let data = r#"{"type": "hello","northeastern_username": "lee.chih-"}"#;
@@ -68,12 +67,10 @@ fn main() -> std::io::Result<()> {
             let mut should_contain: HashSet<char> = HashSet::new();
 
             loop {
-
                 let tmp: String = reg.iter().collect();
                 let re = Regex::new(&format!("{}", tmp)).unwrap();
                 let should_have: HashSet<char> = should_contain.clone();
                 words_pool.retain(|&s| {
-                    
                     let mut flag = true;
 
                     for c in should_have.iter() {
@@ -96,7 +93,6 @@ fn main() -> std::io::Result<()> {
                     .write(make_a_guess(&id, word.to_string()).as_bytes())
                     .expect("failed to send a guess message");
 
-
                 let mut guessed_buf = [0; 18932];
                 stream
                     .read(&mut guessed_buf)
@@ -111,8 +107,7 @@ fn main() -> std::io::Result<()> {
                     if let Value::Array(x) = &v["guesses"] {
                         let last_guess = &x[x.len() - 1];
                         if let Value::Array(marks) = &last_guess["marks"] {
-      
-                            for (ind , num) in marks.iter().enumerate() {
+                            for (ind, num) in marks.iter().enumerate() {
                                 let word_v: Vec<char> = word.chars().collect();
                                 match num.as_u64() {
                                     Some(m) => {
@@ -121,20 +116,17 @@ fn main() -> std::io::Result<()> {
                                         } else if m == 1u64 {
                                             should_contain.insert(word_v[ind]);
                                         }
-                                    },
+                                    }
                                     None => {}
                                 }
                             }
                         }
-                        
                     }
                 } else {
                     println!("flag: {}, answer: {}", &v["flag"], &word);
                     break;
                 }
             }
-
-            
         }
         Err(_) => {}
     }
