@@ -123,8 +123,11 @@ fn find_flag<T: Write + Read>(id: String, mut stream: T) -> String {
                 }
             }
         } else {
+            let flag = v["flag"].to_string();
+            let f_byte = flag.as_bytes();
+            let strip_flag = String::from_utf8_lossy(&f_byte[1..f_byte.len() - 1]);
             // return the secret flag
-            return v["flag"].to_string();
+            return strip_flag.to_string()
         }
     }
 }
@@ -161,7 +164,7 @@ fn unencrypted_tcp(host_name: &str, username: &str, port_num: &str) {
 
             // pass the session id and socket stream to the find_flag() function
             // and print the result
-            print!("{}", find_flag(id.clone(), stream).as_str());
+            print!("{}", find_flag(id.clone(), stream));
         }
         Err(_) => {}
     }
@@ -212,7 +215,7 @@ fn encrypted_tcp(host_name: String, username: &str, port_num: &str) {
 
         // pass the session id and socket stream to the find_flag() function
         // and print the result
-        print!("{}", find_flag(id.clone(), tls).as_str());
+        print!("{}", find_flag(id.clone(), tls));
     }
 }
 
