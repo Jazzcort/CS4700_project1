@@ -33,8 +33,8 @@ fn load_words() -> String {
 
 fn find_flag<T: Write + Read>(id: String, mut stream: T) -> String {
     let large_words: String = load_words();
-    let words_vec: Vec<&str> = large_words.split("\n").collect();
-    let mut words_pool: HashSet<&str> = words_vec.into_iter().collect();
+    let mut words_pool: Vec<&str> = large_words.split("\n").collect();
+
     let mut reg = ['.'; 5];
     let mut should_contain: HashSet<char> = HashSet::new();
 
@@ -55,8 +55,7 @@ fn find_flag<T: Write + Read>(id: String, mut stream: T) -> String {
             re.is_match(s) && flag
         });
 
-        let word = words_pool.clone().drain().next().unwrap();
-        words_pool.remove(word);
+        let word = words_pool.pop().expect("Running out of words before getting the correct answer");
 
         stream
             .write(make_a_guess(&id, word.to_string()).as_bytes())
@@ -92,9 +91,7 @@ fn find_flag<T: Write + Read>(id: String, mut stream: T) -> String {
                 }
             }
         } else {
-            // println!("flag: {}, answer: {}", &v["flag"], &word);
             return v["flag"].to_string();
-            // break;
         }
     }
 }
@@ -116,7 +113,7 @@ fn unencrypted_tcp(host_name: &str, username: &str, port_num: &str) {
                 .expect("failed to read the start message");
 
             let hello_res = String::from_utf8_lossy(&buf);
-            let (res, _) = hello_res.split_at(hello_res.find('\n').unwrap());
+            let (res, _) = hello_res.split_at(hello_res.find('\n').expect("can't find a line breaker in the received message"));
 
             let v: Value = serde_json::from_str(res).expect("JSON parsing failed");
 
@@ -220,14 +217,18 @@ fn main() -> std::io::Result<()> {
         return Ok(());
     }
 
-    if port_num.is_empty() {
-        if is_tls {
+    if is_tls {
+        if port_num.is_empty() {
             port_num = ENCRYPTIED_PORT.to_string();
-            encrypted_tcp(host_name.clone(), &username, &port_num);
-        } else {
-            port_num = UNENCRYPTIED_PORT.to_string();
-            unencrypted_tcp(&host_name, &username, &port_num);
         }
+        encrypted_tcp(host_name.clone(), &username, &port_num);
+
+    } else {
+        if port_num.is_empty() {
+            port_num = UNENCRYPTIED_PORT.to_string();
+        }
+        unencrypted_tcp(&host_name, &username, &port_num);
+
     }
     Ok(())
 }
