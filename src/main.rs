@@ -179,6 +179,13 @@ fn main() -> std::io::Result<()> {
                 match args[ind].as_str() {
                     "-p" => match args.get(ind + 1) {
                         Some(x) => {
+                            for c in x.chars() {
+                                if !c.is_ascii_digit() {
+                                    writeln!(&mut std::io::stderr(), "-p flag with invalid port number")?;
+                                    return Ok(());
+                                }
+                            }
+
                             port_num.push_str(x.as_str());
                             ind += 2;
                         }
