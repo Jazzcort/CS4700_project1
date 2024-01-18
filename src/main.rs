@@ -161,7 +161,7 @@ fn unencrypted_tcp(host_name: &str, username: &str, port_num: &str) {
 
             // pass the session id and socket stream to the find_flag() function
             // and print the result
-            println!("{}", find_flag(id.clone(), stream));
+            print!("{}", find_flag(id.clone(), stream).as_str());
         }
         Err(_) => {}
     }
@@ -212,7 +212,7 @@ fn encrypted_tcp(host_name: String, username: &str, port_num: &str) {
 
         // pass the session id and socket stream to the find_flag() function
         // and print the result
-        println!("{}", find_flag(id.clone(), tls));
+        print!("{}", find_flag(id.clone(), tls).as_str());
     }
 }
 
