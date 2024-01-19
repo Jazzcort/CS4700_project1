@@ -86,7 +86,6 @@ fn find_flag<T: Write + Read>(id: String, mut stream: T) -> String {
             .write(make_a_guess(&id, word.to_string()).as_bytes())
             .expect("failed to send a guess message");
 
-        let mut guessed_res: String = String::new();
         let mut guessed_buf = [0; 2048];
         // read the response from the server
         stream
