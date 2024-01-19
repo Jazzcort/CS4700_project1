@@ -120,14 +120,20 @@ fn find_flag<T: Write + Read>(id: String, mut stream: T) -> String {
                             None => {}
                         }
                     }
+                } else {
+                    return "JSON object formatting error".to_string();
                 }
+            } else {
+                return "JSON object formatting error".to_string();
             }
-        } else {
+        } else if &v["type"] == "bye"  {
             let flag = v["flag"].to_string();
             let f_byte = flag.as_bytes();
             let strip_flag = String::from_utf8_lossy(&f_byte[1..f_byte.len() - 1]);
             // return the secret flag
             return strip_flag.to_string()
+        } else {
+            return format!("reveived wrong message: {}", v.to_string());
         }
     }
 }
@@ -166,7 +172,9 @@ fn unencrypted_tcp(host_name: &str, username: &str, port_num: &str) {
             // and print the result
             print!("{}", find_flag(id.clone(), stream));
         }
-        Err(_) => {}
+        Err(_) => {
+            print!("can't connect to the unencrypted socket");
+        }
     }
 }
 
@@ -216,6 +224,8 @@ fn encrypted_tcp(host_name: String, username: &str, port_num: &str) {
         // pass the session id and socket stream to the find_flag() function
         // and print the result
         print!("{}", find_flag(id.clone(), tls));
+    } else {
+        print!("can't connect to the encrypted socket");
     }
 }
 
@@ -271,6 +281,8 @@ fn main() -> std::io::Result<()> {
                             ind += 1;
                         } else if username.is_empty() {
                             username.push_str(args[ind].as_str());
+                            ind += 1;
+                        } else {
                             ind += 1;
                         }
                     }
