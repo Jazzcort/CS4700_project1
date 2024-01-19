@@ -3,14 +3,14 @@ use serde_json::Value;
 use std::collections::HashSet;
 use std::env;
 use std::fs::File;
-use std::sync::Arc;
 use std::io::{Read, Write};
 use std::net::TcpStream;
+use std::sync::Arc;
 
 // import crate
+use regex::Regex;
 use rustls;
 use webpki_roots;
-use regex::Regex;
 
 // constant value for default port numbers and workd file directory
 const UNENCRYPTIED_PORT: &str = "27993";
@@ -77,14 +77,17 @@ fn find_flag<T: Write + Read>(id: String, mut stream: T) -> String {
         });
 
         // pick a random word
-        let word = words_pool.pop().expect("Running out of words before getting the correct answer");
+        let word = words_pool
+            .pop()
+            .expect("Running out of words before getting the correct answer");
 
         // write to the server stream
         stream
             .write(make_a_guess(&id, word.to_string()).as_bytes())
             .expect("failed to send a guess message");
 
-        let mut guessed_buf = [0; 1024];
+        let mut guessed_res: String = String::new();
+        let mut guessed_buf = [0; 2048];
         // read the response from the server
         stream
             .read(&mut guessed_buf)
@@ -107,7 +110,6 @@ fn find_flag<T: Write + Read>(id: String, mut stream: T) -> String {
                         let word_v: Vec<char> = word.chars().collect();
                         match num.as_u64() {
                             Some(m) => {
-                                
                                 if m == 2u64 {
                                     // add the char to the corresponding postion of the char array,
                                     // if mark is 2
@@ -126,12 +128,12 @@ fn find_flag<T: Write + Read>(id: String, mut stream: T) -> String {
             } else {
                 return "JSON object formatting error".to_string();
             }
-        } else if &v["type"] == "bye"  {
+        } else if &v["type"] == "bye" {
             let flag = v["flag"].to_string();
             let f_byte = flag.as_bytes();
             let strip_flag = String::from_utf8_lossy(&f_byte[1..f_byte.len() - 1]);
             // return the secret flag
-            return strip_flag.to_string()
+            return strip_flag.to_string();
         } else {
             return format!("reveived wrong message: {}", v.to_string());
         }
@@ -161,7 +163,11 @@ fn unencrypted_tcp(host_name: &str, username: &str, port_num: &str) {
                 .expect("failed to read the start message");
 
             let hello_res = String::from_utf8_lossy(&buf);
-            let (res, _) = hello_res.split_at(hello_res.find('\n').expect("can't find a line breaker in the received message"));
+            let (res, _) = hello_res.split_at(
+                hello_res
+                    .find('\n')
+                    .expect("can't find a line breaker in the received message"),
+            );
 
             let v: Value = serde_json::from_str(res).expect("JSON parsing failed");
 
@@ -198,7 +204,6 @@ fn encrypted_tcp(host_name: String, username: &str, port_num: &str) {
 
     // establish connection to the TCP server
     if let Ok(mut stream) = TcpStream::connect(format!("{}:{}", host_name, port_num)) {
-
         // pass the socket stream to the Stream struct
         let mut tls = rustls::Stream::new(&mut conn, &mut stream);
         let mut data = "{\"type\":\"hello\",\"northeastern_username\":".to_string();
@@ -255,7 +260,10 @@ fn main() -> std::io::Result<()> {
                             // check if the port numbers are all digits
                             for c in x.chars() {
                                 if !c.is_ascii_digit() {
-                                    writeln!(&mut std::io::stderr(), "-p flag with invalid port number")?;
+                                    writeln!(
+                                        &mut std::io::stderr(),
+                                        "-p flag with invalid port number"
+                                    )?;
                                     return Ok(());
                                 }
                             }
@@ -311,14 +319,12 @@ fn main() -> std::io::Result<()> {
             port_num = ENCRYPTIED_PORT.to_string();
         }
         encrypted_tcp(host_name.clone(), &username, &port_num);
-
     } else {
         // if port number is not provided, use the default number
         if port_num.is_empty() {
             port_num = UNENCRYPTIED_PORT.to_string();
         }
         unencrypted_tcp(&host_name, &username, &port_num);
-
     }
     Ok(())
 }
