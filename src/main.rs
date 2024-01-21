@@ -8,6 +8,7 @@ use std::net::TcpStream;
 use std::sync::Arc;
 
 // import crate
+use rand::prelude::*;
 use regex::Regex;
 use rustls;
 use webpki_roots;
@@ -29,15 +30,28 @@ fn make_a_guess(id: &String, word: String) -> String {
 }
 
 /**
+ * This function is used to randomize the words list
+ */
+fn randomize_vec(mut arr: Vec<String>) -> Vec<String> {
+    let mut rng = rand::thread_rng();
+    arr.shuffle(&mut rng);
+    arr
+}
+
+/**
  * This function is used to load the words file from the root directory to a string.
  */
-fn load_words() -> String {
+fn load_words() -> Vec<String> {
     let mut f = File::open(WORD_FILE).expect("failed to open the words file");
     let mut words = vec![];
 
     f.read_to_end(&mut words).expect("failed to read file");
 
-    return String::from_utf8_lossy(&words).to_string();
+    // return String::from_utf8_lossy(&words).to_string();
+    let tmp = String::from_utf8_lossy(&words).to_string();
+
+    let a: Vec<String> = tmp.split("\n").map(|x| x.to_string()).collect();
+    randomize_vec(a)
 }
 
 /**
@@ -46,9 +60,8 @@ fn load_words() -> String {
  * would be pass to this function with the session id for the guessing part of the game.
  */
 fn find_flag<T: Write + Read>(id: String, mut stream: T) -> String {
-    // load the words file and construct the words pool
-    let large_words: String = load_words();
-    let mut words_pool: Vec<&str> = large_words.split("\n").collect();
+    // load the words file and construct the randomized words pool
+    let mut words_pool = load_words();
 
     // construct the initial Regular Expression pattern and the HashSet for the correct word
     let mut reg = ['.'; 5];
@@ -61,7 +74,7 @@ fn find_flag<T: Write + Read>(id: String, mut stream: T) -> String {
         let re = Regex::new(&format!("{}", tmp)).unwrap();
         let should_have: HashSet<char> = should_contain.clone();
         // filter out the invalid word
-        words_pool.retain(|&s| {
+        words_pool.retain(|s| {
             let mut flag = true;
 
             // check if the word contains all the correct letters
@@ -94,7 +107,11 @@ fn find_flag<T: Write + Read>(id: String, mut stream: T) -> String {
 
         // cut out the empty part and turn the byte code into a string
         let guessed_res = String::from_utf8_lossy(&guessed_buf);
-        let (res, _) = guessed_res.split_at(guessed_res.find("\n").unwrap());
+        let (res, _) = guessed_res.split_at(
+            guessed_res
+                .find("\n")
+                .expect("message size exceeds the read buffer size"),
+        );
 
         // parse the string into a Value struct
         let v: Value = serde_json::from_str(res).expect("JSON parsing error (guess)");
